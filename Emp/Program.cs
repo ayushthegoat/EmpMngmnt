@@ -1,5 +1,6 @@
 using Emp.Data;
 using Emp.Models;
+using Emp.Repo;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Configure connection string and DbContext
 var connectionString = builder.Configuration.GetConnectionString("conn");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+
+builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 
 builder.Services.AddDefaultIdentity<IdentityUser>()
     .AddDefaultTokenProviders()

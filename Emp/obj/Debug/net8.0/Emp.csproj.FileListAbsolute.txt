@@ -573,3 +573,4 @@ C:\Users\Admin\Downloads\Emp\Emp\Emp\obj\Debug\net8.0\refint\Emp.dll
 C:\Users\Admin\Downloads\Emp\Emp\Emp\obj\Debug\net8.0\Emp.pdb
 C:\Users\Admin\Downloads\Emp\Emp\Emp\obj\Debug\net8.0\Emp.genruntimeconfig.cache
 C:\Users\Admin\Downloads\Emp\Emp\Emp\obj\Debug\net8.0\ref\Emp.dll
+C:\Users\Admin\Downloads\Emp\Emp\Emp\obj\Debug\net8.0\Emp.sourcelink.json
