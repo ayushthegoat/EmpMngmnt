@@ -38,8 +38,6 @@ namespace Emp.Controllers
             return View(await _employeeRepository.GetAllAsync());
         }
 
-     
-``````````````
 
         public async Task<IActionResult> Details(int? id)
         {
