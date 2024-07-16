@@ -179,7 +179,7 @@ namespace Emp.Areas.Identity.Pages.Account
                         await _userManager.AddToRoleAsync(user, "Employee");
                     }
 
-                    
+                    //creating new employee 
                     var employee = new Employee
                     {
                         Name = Input.Name,
