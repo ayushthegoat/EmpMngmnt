@@ -27,7 +27,7 @@ namespace Emp.Controllers
             _roleManager = roleManager; 
         }
 
-        // GET: Employees
+       
         [Authorize(Roles = "Admin, Employee")]
         public async Task<IActionResult> Index()
         {
@@ -35,7 +35,7 @@ namespace Emp.Controllers
             return View(await _context.Employees.ToListAsync());
         }
 
-        // GET: Employees/Details/5
+   
 
         public async Task<IActionResult> Details(int? id)
         {
@@ -54,16 +54,14 @@ namespace Emp.Controllers
             return View(employee);
         }
 
-        // GET: Employees/Create
+      
         
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Employees/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+     
         [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -76,13 +74,11 @@ namespace Emp.Controllers
               
             }
 
-            
+
             DateOnly dobDateOnly = employee.Dob;
-
          
-            TimeOnly timeOfDay = TimeOnly.FromDateTime(DateTime.Now); // 10:30 AM, adjust as needed
-
-           
+            TimeOnly timeOfDay = TimeOnly.FromDateTime(DateTime.Now); 
+    
             DateTime dobDateTime = dobDateOnly.ToDateTime(timeOfDay);
 
       
@@ -93,7 +89,7 @@ namespace Emp.Controllers
                 PhoneNumber = employee.PhoneNumber,
                 Name = employee.Name,
                 Age = employee.Age,
-                Dob = dobDateTime, // Assigning the DateTime value
+                Dob = dobDateTime, 
                 Address = employee.Address,
                 IsAdmin = employee.IsAdmin
             };
@@ -120,7 +116,7 @@ namespace Emp.Controllers
 
         }
 
-        // GET: Employees/Edit/5
+   
         [Authorize(Roles ="Admin, Employee")]
         public async Task<IActionResult> Edit(int? id)
         {
@@ -137,9 +133,6 @@ namespace Emp.Controllers
             return View(employee);
         }
 
-        // POST: Employees/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Age,Dob,Address,PhoneNumber,Email,IsAdmin")] Employee employee)
@@ -172,7 +165,7 @@ namespace Emp.Controllers
             return View(employee);
         }
 
-        // GET: Employees/Delete/5
+     
         [Authorize(Roles ="Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
@@ -191,7 +184,7 @@ namespace Emp.Controllers
             return View(employee);
         }
 
-        // POST: Employees/Delete/5
+ 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

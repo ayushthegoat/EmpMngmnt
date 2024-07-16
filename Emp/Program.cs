@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure connection string and DbContext
 var connectionString = builder.Configuration.GetConnectionString("conn");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 
 builder.Services.AddDefaultIdentity<IdentityUser>()
