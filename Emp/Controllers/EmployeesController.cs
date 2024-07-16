@@ -10,32 +10,36 @@ using Emp.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using NuGet.Packaging.Signing;
+using Emp.Repo;
 
 namespace Emp.Controllers
 {
     public class EmployeesController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-
-        public EmployeesController(ApplicationDbContext context,
-            UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
-        {
-            _context = context;
-            _userManager = userManager;
-            _roleManager = roleManager; 
-        }
+     
+        private readonly IEmployeeRepository _employeeRepository;
+       
 
        
+        public EmployeesController(IEmployeeRepository employeeRepository)
+        {
+          
+            _employeeRepository = employeeRepository;
+           
+        }
+
+     
+
         [Authorize(Roles = "Admin, Employee")]
         public async Task<IActionResult> Index()
         {
 
-            return View(await _context.Employees.ToListAsync());
+
+            return View(await _employeeRepository.GetAllAsync());
         }
 
-   
+     
+``````````````
 
         public async Task<IActionResult> Details(int? id)
         {
@@ -44,8 +48,8 @@ namespace Emp.Controllers
                 return NotFound();
             }
 
-            var employee = await _context.Employees
-                .FirstOrDefaultAsync(m => m.Id == id);
+          
+            var employee = await _employeeRepository.GetByIdAsync(id.Value);
             if (employee == null)
             {
                 return NotFound();
@@ -61,7 +65,7 @@ namespace Emp.Controllers
             return View();
         }
 
-     
+       
         [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -69,54 +73,18 @@ namespace Emp.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(employee);
-                await _context.SaveChangesAsync();
+          
+              await _employeeRepository.AddAsync(employee);
               
             }
 
 
-            DateOnly dobDateOnly = employee.Dob;
-         
-            TimeOnly timeOfDay = TimeOnly.FromDateTime(DateTime.Now); 
-    
-            DateTime dobDateTime = dobDateOnly.ToDateTime(timeOfDay);
-
-      
-            var user = new ApplicationUser
-            {
-                UserName = employee.Email,
-                Email = employee.Email,
-                PhoneNumber = employee.PhoneNumber,
-                Name = employee.Name,
-                Age = employee.Age,
-                Dob = dobDateTime, 
-                Address = employee.Address,
-                IsAdmin = employee.IsAdmin
-            };
-
-            var defaultPass = "Default@123";
-            var result = await _userManager.CreateAsync(user, defaultPass);
-
-            if(result.Succeeded)
-            {
-                if(employee.IsAdmin)
-                {
-                    await _userManager.AddToRoleAsync(user, "Admin");
-                }
-                else
-                {
-                    await _userManager.AddToRoleAsync(user, "Employee");
-                }
-
-                return RedirectToAction(nameof(Index));
-            }
-           
             return View(employee);
 
 
         }
 
-   
+        
         [Authorize(Roles ="Admin, Employee")]
         public async Task<IActionResult> Edit(int? id)
         {
@@ -125,7 +93,8 @@ namespace Emp.Controllers
                 return NotFound();
             }
 
-            var employee = await _context.Employees.FindAsync(id);
+         
+            var employee = await _employeeRepository.GetByIdAsync(id.Value);
             if (employee == null)
             {
                 return NotFound();
@@ -133,6 +102,7 @@ namespace Emp.Controllers
             return View(employee);
         }
 
+ 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Age,Dob,Address,PhoneNumber,Email,IsAdmin")] Employee employee)
@@ -146,12 +116,14 @@ namespace Emp.Controllers
             {
                 try
                 {
-                    _context.Update(employee);
-                    await _context.SaveChangesAsync();
+                 
+                    
+                    await _employeeRepository.UpdateAsync(employee);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!EmployeeExists(employee.Id))
+                
+                    if (!await _employeeRepository.EmployeeExistsAsync(employee.Id))
                     {
                         return NotFound();
                     }
@@ -165,7 +137,7 @@ namespace Emp.Controllers
             return View(employee);
         }
 
-     
+        // GET: Employees/Delete/5
         [Authorize(Roles ="Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
@@ -174,8 +146,8 @@ namespace Emp.Controllers
                 return NotFound();
             }
 
-            var employee = await _context.Employees
-                .FirstOrDefaultAsync(m => m.Id == id);
+          
+            var employee = await _employeeRepository.GetByIdAsync(id.Value);
             if (employee == null)
             {
                 return NotFound();
@@ -184,24 +156,28 @@ namespace Emp.Controllers
             return View(employee);
         }
 
- 
+        // POST: Employees/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var employee = await _context.Employees.FindAsync(id);
-            if (employee != null)
-            {
-                _context.Employees.Remove(employee);
-            }
+           
+          
+          
+            
+               await _employeeRepository.DeleteAsync(id);
+            
 
-            await _context.SaveChangesAsync();
+          
+         
             return RedirectToAction(nameof(Index));
         }
 
-        private bool EmployeeExists(int id)
+       
+        private async Task<bool> EmployeeExists(int id)
         {
-            return _context.Employees.Any(e => e.Id == id);
+           
+           return await _employeeRepository.EmployeeExistsAsync(id);
         }
     }
 }

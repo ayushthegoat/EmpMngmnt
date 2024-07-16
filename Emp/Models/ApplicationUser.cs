@@ -27,10 +27,6 @@ namespace Emp.Models
         [Required]
         public bool IsAdmin { get; set; }
 
-        // Navigation property to link Employee details if needed
-        // public Employee Employee { get; set; }
-
-        // Navigation property to link Admin details if needed
-        // public Admin Admin { get; set; }
+      
     }
 }
