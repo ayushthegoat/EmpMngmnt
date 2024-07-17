@@ -33,7 +33,6 @@ namespace Emp.Controllers
             return View(await _employeeRepository.GetAllAsync());
         }
 
-        
 
         public async Task<IActionResult> Details(int? id)
         {
@@ -92,7 +91,7 @@ namespace Emp.Controllers
             return View(employee);
         }
 
-        
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Age,Dob,Address,PhoneNumber,Email,IsAdmin")] Employee employee)
@@ -106,8 +105,13 @@ namespace Emp.Controllers
             {
                 try
                 {
-                    
-                    await _employeeRepository.UpdateAsync(employee);
+               
+                    var existingEmployee = await _employeeRepository.GetByIdAsync(employee.Id);
+                    var prevMail = existingEmployee.Email;
+                    await _employeeRepository.UpdateAsync(employee, prevMail);
+
+               
+
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -125,7 +129,9 @@ namespace Emp.Controllers
             return View(employee);
         }
 
-    
+
+
+
         [Authorize(Roles ="Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
@@ -148,12 +154,14 @@ namespace Emp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-          
-          
-            
-               await _employeeRepository.DeleteAsync(id);
-            
 
+
+            var employee = await _employeeRepository.GetByIdAsync(id);
+            if(employee != null)
+            {
+               await _employeeRepository.DeleteAsync(id, employee);
+            }
+           
          
             return RedirectToAction(nameof(Index));
         }
