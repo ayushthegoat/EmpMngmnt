@@ -98,8 +98,11 @@ namespace Emp.Repo
 
                 _context.Employees.Update(existingEmployee);
                 await _context.SaveChangesAsync();
+               
 
             }
+
+
 
             var user = _context.ApplicationsUsers.Where(i => i.Email == previousEmail).FirstOrDefault();
 
