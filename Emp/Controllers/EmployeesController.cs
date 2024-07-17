@@ -116,7 +116,12 @@ namespace Emp.Controllers
             if (ModelState.IsValid)
             {
                 try
-                {await _employeeRepository.UpdateAsync(employee);
+
+                {
+                    var existingEmployee = await _employeeRepository.GetByIdAsync(employee.Id);
+                    var prevMail = existingEmployee.Email = existingEmployee.Email;
+
+                    await _employeeRepository.UpdateAsync(employee, prevMail);
                     
                 }
                 catch (DbUpdateConcurrencyException)
@@ -161,7 +166,11 @@ namespace Emp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-         
+            var employee = await _employeeRepository.GetByIdAsync(id);
+            if (employee != null)
+            {
+                await _employeeRepository.DeleteAsync(id, employee);
+            }
             return RedirectToAction(nameof(Index));
         }
 
