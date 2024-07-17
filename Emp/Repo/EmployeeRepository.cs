@@ -104,6 +104,7 @@ namespace Emp.Repo
 
 
 
+
             var user = _context.ApplicationsUsers.Where(i => i.Email == previousEmail).FirstOrDefault();
 
             if (user != null)
