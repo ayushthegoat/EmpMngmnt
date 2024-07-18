@@ -33,8 +33,6 @@ namespace Emp.Controllers
         [Authorize(Roles = "Admin, Employee")]
         public async Task<IActionResult> Index()
         {
-
-
             return View(await _employeeRepository.GetAllAsync());
         }
 
@@ -76,11 +74,7 @@ namespace Emp.Controllers
               await _employeeRepository.AddAsync(employee);
               return RedirectToAction(nameof(Index));
             }
-          
-
-
             return View(employee);
-
 
         }
 
