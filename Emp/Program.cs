@@ -23,6 +23,13 @@ builder.Services.AddDefaultIdentity<IdentityUser>()
 
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Adjust session timeout as needed
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true; // Important to avoid GDPR cookie consent issues
+});
+
 var app = builder.Build();
 
 // Seed roles
@@ -55,7 +62,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -88,7 +95,7 @@ static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager, UserMana
             UserName = superEmail,
             Email = superEmail,
             EmailConfirmed = true,
-            TwoFactorEnabled = true
+         
         };
         var result = await userManager.CreateAsync(superAdmin, superPass);
         if(result.Succeeded)

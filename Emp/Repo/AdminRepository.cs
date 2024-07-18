@@ -1,5 +1,8 @@
-﻿using Emp.Controllers;
+﻿
+
+using Emp.Controllers;
 using Emp.Models;
+using Emp.Models.Emp.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +21,7 @@ namespace Emp.Repo
             _logger = logger;
         }
 
-        public async Task Create(AdminAuthModel model)
+        public async Task<bool> Create(AdminAuthModel model)
         {
             _logger.LogInformation("Admin Username: {Username}", model.Username);
 
@@ -30,10 +33,16 @@ namespace Emp.Repo
                 if (result)
                 {
                     _logger.LogInformation("Password {Password}", model.Password);
+                    var isInRole = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+                    if (isInRole)
+                    {
+                        return true;
+                    }
+                 
                 }
             }
-            return;
+            return false;
         }
-        
+
     }
 }
