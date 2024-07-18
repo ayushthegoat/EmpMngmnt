@@ -14,6 +14,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
 
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+
 builder.Services.AddDefaultIdentity<IdentityUser>()
     .AddDefaultTokenProviders()
     .AddRoles<IdentityRole>()
@@ -31,7 +33,8 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        await SeedRolesAsync(roleManager);
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        await SeedRolesAsync(roleManager, userManager);
     }
     catch (Exception ex)
     {
@@ -63,15 +66,38 @@ app.MapControllerRoute(
 
 app.Run();
 
-static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
+static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager, UserManager<IdentityUser> userManager)
 {
-    string[] roleNames = { "Admin", "Employee" };
+    string[] roleNames = { "Admin", "Employee", "SuperAdmin" };
 
     foreach (var roleName in roleNames)
     {
         if (!await roleManager.RoleExistsAsync(roleName))
         {
             await roleManager.CreateAsync(new IdentityRole(roleName));
+        }
+    }
+
+    var superEmail = "superadmin@accops.com";
+    var superPass = "Super@123";
+
+    if(userManager.Users.All(u => u.UserName != superEmail))
+    {
+        var superAdmin = new IdentityUser
+        {
+            UserName = superEmail,
+            Email = superEmail,
+            EmailConfirmed = true,
+            TwoFactorEnabled = true
+        };
+        var result = await userManager.CreateAsync(superAdmin, superPass);
+        if(result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
+        }
+        else
+        {
+            throw new Exception("Error in Creating Super Admin");
         }
     }
 }

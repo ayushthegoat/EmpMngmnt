@@ -61,7 +61,7 @@
                 <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
             </div>
             <div class="form-check mb-3">
-                <input asp-for="Input.IsAdmin" class="form-check-input" />
+                <input asp-for="Input.IsAdmin" class="form-check-input" id="isAdminCheck"/>
                 <label class="form-check-label" asp-for="Input.IsAdmin">Is Admin</label>
             </div>
             <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-outline-success">Register</button>
@@ -70,6 +70,65 @@
 
 </div>
 
+<!-- Modal -->
+<div class="modal fade" id="adminAuthModal" tabindex="-1" aria-labelledby="adminAuthModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adminAuthModalLabel">More Auth Needed!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="adminAuthForm">
+                    <div class="mb-3">
+                        <label for="adminUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="adminUsername" placeholder="Enter your username">
+                    </div>
+                    <div class="mb-3">
+                        <label for="adminPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="adminPassword" placeholder="Enter your password">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="adminAuthSubmit">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+<script>
+        document.getElementById('isAdminCheck').addEventListener('change', function () {
+            if (this.checked) {
+                var adminAuthModal = new bootstrap.Modal(document.getElementById('adminAuthModal'));
+                adminAuthModal.show();
+            }
+        });
+        document.getElementById('adminAuthSubmit').addEventListener('click', function () {
+            var username = document.getElementById('adminUsername').value;
+            var password = document.getElementById('adminPassword').value;
+
+            fetch('/Admin/Create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ username: username, password: password })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        var adminAuthModal = bootstrap.Modal.getInstance(document.getElementById('adminAuthModal'));
+                        adminAuthModal.hide();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+
+</script>
 }
