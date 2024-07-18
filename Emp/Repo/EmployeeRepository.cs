@@ -137,9 +137,10 @@ namespace Emp.Repo
            
         public async Task DeleteAsync(int id, Employee employee)
         {
-           
 
-            var user = _context.ApplicationsUsers.Where(i => i.Email == employee.Email).FirstOrDefault();
+
+            //var user = _context.ApplicationsUsers.Where(i => i.Email == employee.Email).FirstOrDefault();
+            var user = await _userManager.FindByEmailAsync(employee.Email);
 
             if (user != null)
             {

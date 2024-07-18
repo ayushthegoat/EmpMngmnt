@@ -74,7 +74,7 @@ namespace Emp.Controllers
             {
           
               await _employeeRepository.AddAsync(employee);
-              
+              return RedirectToAction(nameof(Index));
             }
           
 
@@ -122,7 +122,8 @@ namespace Emp.Controllers
                     var prevMail = existingEmployee.Email = existingEmployee.Email;
 
                     await _employeeRepository.UpdateAsync(employee, prevMail);
-                    
+                    return RedirectToAction(nameof(Index));
+
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -136,7 +137,7 @@ namespace Emp.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+              
             }
             return View(employee);
         }
