@@ -147,7 +147,15 @@ namespace Emp.Areas.Identity.Pages.Account
         {
             returnUrl ??= Url.Content("~/");
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
+            if (Input.IsAdmin)
+            {
+                if (HttpContext.Session.GetString("AdminAuth") != "true")
+                {
+                    ModelState.AddModelError(string.Empty, "ADMIN AUTHENTICATION REQUIRED.");
+                    return Page();
+                }
+            }
+           
             if (ModelState.IsValid)
             {
                 var user = new ApplicationUser
@@ -169,6 +177,7 @@ namespace Emp.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
+                    TempData["SuccessMessage"] = "You can now log in!";
                    //assigning based on if admin or not
                     if (Input.IsAdmin)
                     {

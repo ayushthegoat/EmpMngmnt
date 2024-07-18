@@ -30,7 +30,7 @@ namespace Emp.Controllers
 
      
 
-        [Authorize(Roles = "Admin, Employee")]
+        [Authorize(Roles = "Admin, Employee, SuperAdmin")]
         public async Task<IActionResult> Index()
         {
             return View(await _employeeRepository.GetAllAsync());
@@ -63,7 +63,7 @@ namespace Emp.Controllers
 
      
        
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, SuperAdmin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name,Age,Dob,Address,PhoneNumber,Email,IsAdmin")] Employee employee)
@@ -80,7 +80,7 @@ namespace Emp.Controllers
 
      
         
-        [Authorize(Roles ="Admin, Employee")]
+        [Authorize(Roles ="Admin, SuperAdmin")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -137,7 +137,7 @@ namespace Emp.Controllers
         }
 
     
-        [Authorize(Roles ="Admin")]
+        [Authorize(Roles ="Admin, SuperAdmin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
