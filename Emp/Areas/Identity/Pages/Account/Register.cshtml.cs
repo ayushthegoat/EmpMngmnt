@@ -197,7 +197,8 @@ namespace Emp.Areas.Identity.Pages.Account
                         Address = Input.Address,
                         PhoneNumber = Input.PhoneNumber,
                         Email = Input.Email,
-                        IsAdmin = Input.IsAdmin
+                        IsAdmin = Input.IsAdmin,
+                        UserId = user.Id,
                     };
                     _context.Add(employee);
                     await _context.SaveChangesAsync();

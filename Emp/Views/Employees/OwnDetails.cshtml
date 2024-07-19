@@ -1,0 +1,63 @@
+﻿@model Emp.Models.Employee
+
+@{
+    ViewData["Title"] = "My Details";
+}
+<style>
+    body {
+        background-image: url('https://static.vecteezy.com/system/resources/previews/003/161/903/non_2x/light-blue-yellow-gradient-blur-background-vector.jpg');
+        background-size: cover;
+        font-family: 'Consolas', monospace;
+        background-repeat: no-repeat;
+    }
+
+    .outlined-label {
+        border: 2px solid #ddd; /* Gray border */
+        padding: 5px;
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.7); /* Slightly transparent background */
+    }
+
+    .form-control-static {
+        margin-top: 5px;
+    }
+</style>
+<h1>@ViewData["Title"]</h1>
+
+<div class="card bg-dark text-light p-4">
+    <h4>Employee Details</h4>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="outlined-label">Name</label>
+                <h5 class="form-control-static">@Model.Name</h5>
+            </div>
+            <div class="form-group">
+                <label class="outlined-label">Age</label>
+                <h5 class="form-control-static">@Model.Age</h5>
+            </div>
+            <div class="form-group">
+                <label class="outlined-label">Date of Birth</label>
+                <h5 class="form-control-static">@Model.Dob.ToString("d")</h5>
+            </div>
+            <div class="form-group">
+                <label class="outlined-label">Address</label>
+                <h5 class="form-control-static">@Model.Address</h5>
+            </div>
+            <div class="form-group">
+                <label class="outlined-label">Phone Number</label>
+                <h5 class="form-control-static">@Model.PhoneNumber</h5>
+            </div>
+            <div class="form-group">
+                <label class="outlined-label">Email</label>
+                <h5 class="form-control-static">@Model.Email</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <a asp-action="Edit" class="btn btn-outline-primary m-3">Edit</a>
+    </div>
+</div>

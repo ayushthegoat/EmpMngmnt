@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using NuGet.Packaging.Signing;
 using Emp.Repo;
+using System.Security.Claims;
 
 namespace Emp.Controllers
 {
@@ -18,34 +19,34 @@ namespace Emp.Controllers
     {
      
         private readonly IEmployeeRepository _employeeRepository;
+        private readonly ILogger<EmployeesController> _logger;
        
 
        
-        public EmployeesController(IEmployeeRepository employeeRepository)
+        public EmployeesController(IEmployeeRepository employeeRepository, ILogger<EmployeesController> logger)
         {
           
             _employeeRepository = employeeRepository;
+            _logger = logger;
            
         }
 
+    
+
      
-
-        [Authorize(Roles = "Admin, Employee, SuperAdmin")]
-        public async Task<IActionResult> Index()
+        
+        [Authorize(Roles ="Admin, SuperAdmin, Employee")]
+        public async Task<IActionResult> Edit()
         {
-            return View(await _employeeRepository.GetAllAsync());
-        }
-
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+       
+            if (userId == null)
             {
-                return NotFound();
+                return Unauthorized();
             }
-
-          
-            var employee = await _employeeRepository.GetByIdAsync(id.Value);
-            if (employee == null)
+            var employee = await _employeeRepository.GetByUserIdAsync(userId);
+            _logger.LogInformation("{userId}", employee.UserId);
+            if (userId == null)
             {
                 return NotFound();
             }
@@ -53,127 +54,61 @@ namespace Emp.Controllers
             return View(employee);
         }
 
-    
-      
-        
-        public IActionResult Create()
-        {
-            return View();
-        }
 
-     
-       
-        [Authorize(Roles = "Admin, SuperAdmin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Age,Dob,Address,PhoneNumber,Email,IsAdmin")] Employee employee)
+        public async Task<IActionResult> Edit([Bind("Id,Name,Age,Dob,Address,PhoneNumber,Email,IsAdmin,UserId")] Employee employee)
         {
-            if (ModelState.IsValid)
-            {
-          
-              await _employeeRepository.AddAsync(employee);
-              return RedirectToAction(nameof(Index));
-            }
-            return View(employee);
+            _logger.LogInformation("{Id}", employee.Id);
+            _logger.LogInformation("{userId}", employee.UserId);
 
+            if (!ModelState.IsValid)
+            {
+                return View(employee);
+            }
+
+            var existingEmployee = await _employeeRepository.GetByIdAsync(employee.Id);
+
+            _logger.LogInformation("{userId}", existingEmployee.UserId);
+            if (existingEmployee == null || existingEmployee.UserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                await _employeeRepository.UpdateAsync(employee);
+                return RedirectToAction("OwnDetails", "Employees");
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await _employeeRepository.EmployeeExistsAsync(employee.Id))
+                {
+                    return NotFound();
+                }
+                throw;
+            }
         }
 
-     
-        
-        [Authorize(Roles ="Admin, SuperAdmin")]
-        public async Task<IActionResult> Edit(int? id)
+        [Authorize(Roles = "Employee")]
+        public async Task<IActionResult> OwnDetails()
         {
-            if (id == null)
+            // Retrieve the currently logged-in user's ID
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == null)
             {
-                return NotFound();
+                return Unauthorized(); // Return 401 Unauthorized if no user ID is found
             }
 
-         
-            var employee = await _employeeRepository.GetByIdAsync(id.Value);
+            // Get the employee details by user ID
+            var employee = await _employeeRepository.GetByUserIdAsync(userId);
             if (employee == null)
             {
-                return NotFound();
-            }
-            return View(employee);
-        }
-
-        
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Age,Dob,Address,PhoneNumber,Email,IsAdmin")] Employee employee)
-        {
-            if (id != employee.Id)
-            {
-                return NotFound();
+                return NotFound(); // Return 404 Not Found if no employee record is found
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-
-                {
-                    var existingEmployee = await _employeeRepository.GetByIdAsync(employee.Id);
-                    var prevMail = existingEmployee.Email = existingEmployee.Email;
-
-                    await _employeeRepository.UpdateAsync(employee, prevMail);
-                    return RedirectToAction(nameof(Index));
-
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                
-                    if (!await _employeeRepository.EmployeeExistsAsync(employee.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-              
-            }
-            return View(employee);
-        }
-
-    
-        [Authorize(Roles ="Admin, SuperAdmin")]
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-          
-            var employee = await _employeeRepository.GetByIdAsync(id.Value);
-            if (employee == null)
-            {
-                return NotFound();
-            }
-
-            return View(employee);
-        }
-
- 
-        // POST: Employees/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var employee = await _employeeRepository.GetByIdAsync(id);
-            if (employee != null)
-            {
-                await _employeeRepository.DeleteAsync(id, employee);
-            }
-            return RedirectToAction(nameof(Index));
-        }
-
-       
-        private async Task<bool> EmployeeExists(int id)
-        {
-           
-           return await _employeeRepository.EmployeeExistsAsync(id);
+            return View(employee); // Return the view with the employee details
         }
     }
 }
