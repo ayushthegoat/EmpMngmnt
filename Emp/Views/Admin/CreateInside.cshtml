@@ -2,7 +2,11 @@
 
 @{
     ViewData["Title"] = "Create";
+    var Success = TempData["Success"] as string;
+    var redirector = Url.Action("Index", "Admin");
 }
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
     body {
         background-image: url('https://static.vecteezy.com/system/resources/previews/003/161/903/non_2x/light-blue-yellow-gradient-blur-background-vector.jpg');
@@ -19,7 +23,7 @@
     <div class="col-md-4">
         <form asp-action="CreateInside">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-          
+
             <div class="form-group">
                 <label asp-for="Name" class="control-label"></label>
                 <input asp-for="Name" class="form-control" />
@@ -30,8 +34,13 @@
                 <input asp-for="Age" class="form-control" />
                 <span asp-validation-for="Age" class="text-danger"></span>
             </div>
+           
             <div class="form-group">
-               
+            <span asp-validation-for="AgeAndDateOfBirth" class="text-danger"></span>
+            </div>
+           
+            <div class="form-group">
+
                 <label asp-for="Dob" class="control-label">Date Of Birth</label>
                 <input asp-for="Dob" class="form-control" />
                 <span asp-validation-for="Dob" class="text-danger"></span>
@@ -51,8 +60,15 @@
                 <input asp-for="Email" class="form-control" />
                 <span asp-validation-for="Email" class="text-danger"></span>
             </div>
-           
+          
+
             <div class="form-group">
+                @*  <input asp-for="UserId" type="hidden" class="form-control"/>  *@
+                <span asp-validation-for="UserId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+
                 <input type="submit" value="Create" class="btn btn-primary m-2" />
             </div>
         </form>
@@ -64,5 +80,23 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var successMessage = '@Success';
+        var redirect = '@redirector';
+        if (successMessage) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Creation Successful',
+                text: successMessage
+            }).then(function () {
+                window.location.href = redirect;
+            });
+        }
+    });
+</script>

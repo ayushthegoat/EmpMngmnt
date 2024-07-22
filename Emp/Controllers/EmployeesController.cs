@@ -29,38 +29,38 @@ namespace Emp.Controllers
 {
     public class EmployeesController : Controller
     {
-     
+
         private readonly IEmployeeRepository _employeeRepository;
         private readonly ILogger<EmployeesController> _logger;
-       
 
-       
+
+
         public EmployeesController(IEmployeeRepository employeeRepository, ILogger<EmployeesController> logger)
         {
-          
+
             _employeeRepository = employeeRepository;
             _logger = logger;
-           
+
         }
 
-    
 
-     
-        
-        [Authorize(Roles ="Admin, SuperAdmin, Employee")]
+
+
+
+        [Authorize(Roles = "Admin, SuperAdmin, Employee")]
         public async Task<IActionResult> Edit()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-       
+            
             if (userId == null)
             {
-                return Unauthorized();
+                return RedirectToAction("GeneralError", "Error");
             }
             var employee = await _employeeRepository.GetByUserIdAsync(userId);
             _logger.LogInformation("{userId}", employee.UserId);
             if (userId == null)
             {
-                return NotFound();
+                return RedirectToAction("GeneralError", "Error");
             }
 
             return View(employee);
@@ -84,7 +84,7 @@ namespace Emp.Controllers
             _logger.LogInformation("{userId}", existingEmployee.UserId);
             if (existingEmployee == null || existingEmployee.UserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
             {
-                return Forbid();
+                return RedirectToAction("AccessDenied", "Error");
             }
 
             try
@@ -96,7 +96,7 @@ namespace Emp.Controllers
             {
                 if (!await _employeeRepository.EmployeeExistsAsync(employee.Id))
                 {
-                    return NotFound();
+                    return RedirectToAction("GeneralError", "Error");
                 }
                 throw;
             }
@@ -117,7 +117,7 @@ namespace Emp.Controllers
             var employee = await _employeeRepository.GetByUserIdAsync(userId);
             if (employee == null)
             {
-                return NotFound(); // Return 404 Not Found if no employee record is found
+                return RedirectToAction("GeneralError", "Error");// Return 404 Not Found if no employee record is found
             }
 
             return View(employee); // Return the view with the employee details

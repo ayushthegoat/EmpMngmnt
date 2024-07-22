@@ -6,7 +6,9 @@ using Emp.Repo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using NuGet.Packaging.Signing;
 using System.Security.Claims;
 
@@ -16,53 +18,79 @@ namespace Emp.Controllers
     {
 
         private readonly IAdminRepository _adminRepository;
-        private readonly IEmployeeRepository _employeeRepository;
 
+        private readonly ILogger<AdminController> _logger;
+        private readonly IMemoryCache _cache;
 
-        public AdminController(IAdminRepository adminRepository, IEmployeeRepository employeeRepository)
+        public AdminController(IAdminRepository adminRepository, ILogger<AdminController> logger, IMemoryCache cache)
         {
             _adminRepository = adminRepository;
-            _employeeRepository = employeeRepository;
+            _logger = logger;
+            _cache = cache;
         }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] AdminAuthModel adminModel)
         {
-
-            var isAuth = await _adminRepository.Create(adminModel);
-            if(isAuth)
+            if (ModelState.IsValid)
             {
-                HttpContext.Session.SetString("AdminAuth", "true");
+                var isAuth = await _adminRepository.Create(adminModel);
+                if (isAuth)
+                {
+                    _cache.Set("AdminAuth", "true", TimeSpan.FromMinutes(2));
 
-                return Json(new { success = true });
+                    return Json(new { success = true });
+                }
+                else
+                {
+                    return Json(new { success = false, mesage = "Invalid username or password" });
+                }
             }
             else
             {
-                return Json(new { success = false, mesage = "Invalid username or password" });
+                return RedirectToAction("GeneralError", "Error");
             }
-        }
 
+        }
+        
         public async Task<IActionResult> Index()
         {
+            var currUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var currUserRole = await _adminRepository.GetUserRoleAsync(currUser);
+
+            if(currUserRole != "Admin" || currUserRole != "SuperAdmin")
+            {
+                return RedirectToAction("AccessDenied", "Error");
+            }
             return View(await _adminRepository.GetAllAsync());
         }
 
 
-        [Authorize(Roles = "Admin, SuperAdmin")]
+       
         public async Task<IActionResult> Edit(int id)
         {
             var currUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var admin = await _adminRepository.GetByIdAsync(id);
+
             if (admin == null)
             {
-                return NotFound();
+                return RedirectToAction("GeneralError", "Error");
             }
 
             var currUserRole = await _adminRepository.GetUserRoleAsync(currUserId);
+            if(currUserRole == "Employee")
+            {
+                return RedirectToAction("AccessDenied", "Error");
+            }
             var adminRole = await _adminRepository.GetUserRoleAsync(admin.UserId);
+            
+            if (currUserId == admin.UserId)
+            {
+                return View(admin);
+            }
             if (currUserRole == "Admin" && adminRole == "Admin" && admin.UserId != currUserId)
             {
-                return Forbid(); 
+                return RedirectToAction("AccessDenied", "Error");
             }
 
             return View(admin);
@@ -79,123 +107,148 @@ namespace Emp.Controllers
                 return View(admin);
             }
 
-            //var existingAdmin = await _adminRepository.GetByUserIdAsync(admin.UserId);
 
-            //if (existingAdmin == null || existingAdmin.UserId != userId)
-            //{
-            //    return Forbid();
-            //}
 
             try
             {
                 await _adminRepository.UpdateAsync(admin);
-                TempData["Status"] = "Success";
-                return RedirectToAction("Index", "Admin");
+                TempData["SuccessMessage"] = "Succesfully Edited";
+                return RedirectToAction("Edit", new { id = admin.Id });
+
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!await _adminRepository.EmployeeExistsAsync(admin.Id))
                 {
-                    return NotFound();
+                    return RedirectToAction("GeneralError", "Error");
                 }
                 throw;
             }
         }
 
-        public async Task<IActionResult>  Delete(int id)
-        {
-            var currUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userForDelete = await _adminRepository.GetByIdAsync(id);
-            var userForDeleteRole = await _adminRepository.GetUserRoleAsync(userForDelete.UserId);
 
-            var currUserRole = await _adminRepository.GetUserRoleAsync(currUser);
-
-            if((currUserRole == "Admin" || currUserRole == "SuperAdmin") && userForDeleteRole == "Employee")
-            {
-                return View(userForDelete);
-            }
-            else if (userForDelete.UserId == currUser)
-            {
-                return RedirectToAction("AccessDenied", "Error");
-            }else
-            {
-                return RedirectToAction("AccessDenied", "Error");
-            }
-
-        }
-
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var currUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userForDelete = await _adminRepository.GetByIdAsync(id);
-            var userForDeleteRole = await _adminRepository.GetUserRoleAsync(userForDelete.UserId);
-
-            var currUserRole = await _adminRepository.GetUserRoleAsync(currUser);
-
-            if ((currUserRole == "Admin" || currUserRole == "SuperAdmin") && userForDeleteRole == "Employee")
-            {
-                await _adminRepository.DeleteAsync(id);
-                return RedirectToAction("Index", "Admin");
-            }
-            else if (userForDelete.UserId == currUser)
-            {
-                return RedirectToAction("AccessDenied", "ErrorController");
-            }
-            else
-            {
-                return RedirectToAction("AccessDenied", "ErrorController");
-            }
-        }
-
-
-
+        [Authorize(Roles = "Admin, SuperAdmin")]
         public async Task<IActionResult> CreateInside()
         {
+           
             return View();
         }
 
 
         [HttpPost]
-        [Authorize(Roles = "Admin, SuperAdmin")]
+      
         public async Task<IActionResult> CreateInside([Bind("Id,Name,Age,Dob,Address,PhoneNumber,Email,IsAdmin,UserId")] Employee emp)
         {
-            
+            if (!ModelState.IsValid)
+            {
+                return View(emp);
+            }
             var listOfEmp = await _adminRepository.GetAllAsync();
 
-            
+
             var doesExist = listOfEmp.Any(e => e.Email.Equals(emp.Email, StringComparison.OrdinalIgnoreCase));
 
             if (doesExist)
             {
-               
-                return RedirectToAction("General", "Error"); 
+
+                return RedirectToAction("GeneralError", "Error");
+
             }
             else
             {
                 try
                 {
-                   
+
                     await _adminRepository.AddAsync(emp);
 
-               
-                    return RedirectToAction("Index", "Admin");
+                    TempData["Success"] = "Employee Creation Succesfull";
+                    return View("CreateInside");
                 }
                 catch (Exception e)
                 {
-                  
-                   
+
+
                     ModelState.AddModelError(string.Empty, "An error occurred while creating the employee.");
 
-                  
-                    return View(emp);
+
+                    return RedirectToAction("GeneralError", "Error");
                 }
             }
         }
 
+        [Authorize(Roles = "Admin, SuperAdmin")]
+        public async Task<IActionResult> DeleteCheck(int id)
+        {
+            var currUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var currUserRole = await _adminRepository.GetUserRoleAsync(currUser);
 
+            var userForDelete = await _adminRepository.GetByIdAsync(id);
+            var currUserId = userForDelete.UserId;
+            var userForDeleteRole = await _adminRepository.GetUserRoleAsync(currUserId);
+            if (currUserRole == userForDeleteRole)
+            {
+                return RedirectToAction("AccessDenied", "Error");
+            }
+            if (currUserRole == "SuperAdmin" && userForDeleteRole == "Admin")
+            {
+                return View(userForDelete);
+            }
+            if ((currUserRole == "Admin" || currUserRole == "SuperAdmin") && userForDeleteRole == "Employee")
+            {
+                return View(userForDelete);
 
+            }
+            else
+            {
+                return RedirectToAction("GeneralError", "Error");
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCheckConfirmed(int id)
+        {
+            var user = await _adminRepository.GetByIdAsync(id);
+            await _adminRepository.DeleteAsync(id);
+
+            TempData["Message"] = "User Deleted SuccesFully";
+            return View("DeleteCheck");
+
+        }
+
+        [Authorize(Roles = "Admin, SuperAdmin")]
+        public async Task<IActionResult> Details(int id)
+        {
+            var currUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var currUserRole = await _adminRepository.GetUserRoleAsync(currUser);
+
+            var userForDetails = await _adminRepository.GetByIdAsync(id);
+            var userForDetailsRole = await _adminRepository.GetUserRoleAsync(userForDetails.UserId);
+
+            if (currUser == userForDetails.UserId)
+            {
+                return View(userForDetails);
+            }
+            if (currUserRole == "Admin" && userForDetailsRole == "Admin")
+            {
+                return RedirectToAction("AccessDenied", "Error");
+            }
+
+            if (currUserRole == "SuperAdmin" && userForDetailsRole == "Admin")
+            {
+                return View(userForDetails);
+            }
+
+            else if ((currUserRole == "Admin" || currUserRole == "SuperAdmin") && userForDetailsRole == "Employee")
+            {
+                return View(userForDetails);
+            }
+            else
+            {
+                return RedirectToAction("GeneralError", "Error");
+            }
+
+        }
 
 
 

@@ -38,7 +38,7 @@ namespace Emp.Repo
 
             //converting dateOnly to dateTime
             DateOnly dobDateOnly = employee.Dob;
-            TimeOnly timeOfDay = TimeOnly.FromDateTime(DateTime.Now); 
+            TimeOnly timeOfDay = TimeOnly.FromDateTime(DateTime.Now);
             DateTime dobDateTime = dobDateOnly.ToDateTime(timeOfDay);
 
 
@@ -49,7 +49,7 @@ namespace Emp.Repo
                 PhoneNumber = employee.PhoneNumber,
                 Name = employee.Name,
                 Age = employee.Age,
-                Dob = dobDateTime, 
+                Dob = dobDateTime,
                 Address = employee.Address,
                 IsAdmin = employee.IsAdmin
             };
@@ -59,15 +59,11 @@ namespace Emp.Repo
 
             if (result.Succeeded)
             {
-                if (employee.IsAdmin)
-                {
-                    await _userManager.AddToRoleAsync(user, "Admin");
-                }
-                else
-                {
-                    await _userManager.AddToRoleAsync(user, "Employee");
-                }
-                return;
+
+
+                await _userManager.AddToRoleAsync(user, "Employee");
+
+
             }
             return;
         }
@@ -96,21 +92,21 @@ namespace Emp.Repo
                 await _context.SaveChangesAsync();
 
             }
-            var user = await _context.ApplicationsUsers.Where(i => i.Id == employee.UserId).FirstOrDefaultAsync();        
-                    if (user != null)
-                {
-                    user.Email = employee.Email;
-                    user.NormalizedEmail = employee.Email.ToUpper();
-                    user.UserName = employee.Email;
-                    user.PhoneNumber = employee.PhoneNumber;
-                    user.Name = employee.Name;
-                    user.Address = employee.Address;
-                    user.Dob = dobDateTime;
-                    user.Age = employee.Age;
-                    await _userManager.UpdateAsync(user);
-                }
+            var user = await _context.ApplicationsUsers.Where(i => i.Id == employee.UserId).FirstOrDefaultAsync();
+            if (user != null)
+            {
+                user.Email = employee.Email;
+                user.NormalizedEmail = employee.Email.ToUpper();
+                user.UserName = employee.Email;
+                user.PhoneNumber = employee.PhoneNumber;
+                user.Name = employee.Name;
+                user.Address = employee.Address;
+                user.Dob = dobDateTime;
+                user.Age = employee.Age;
+                await _userManager.UpdateAsync(user);
             }
-        
+        }
+
 
         public async Task<bool> EmployeeExistsAsync(int id)
         {

@@ -1,152 +1,6 @@
 ﻿
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
@@ -161,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Emp.Data;
 using Emp.Models;
+using Emp.Validation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -168,7 +23,9 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+
 
 namespace Emp.Areas.Identity.Pages.Account
 {
@@ -182,7 +39,8 @@ namespace Emp.Areas.Identity.Pages.Account
         private readonly IEmailSender _emailSender;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ApplicationDbContext _context;
-        
+        private readonly IMemoryCache _cache;
+
 
         public RegisterModel(
             UserManager<IdentityUser> userManager,
@@ -191,7 +49,8 @@ namespace Emp.Areas.Identity.Pages.Account
             ILogger<RegisterModel> logger,
             IEmailSender emailSender,
             RoleManager<IdentityRole> roleManager,
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            IMemoryCache cahche)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -201,6 +60,7 @@ namespace Emp.Areas.Identity.Pages.Account
             _emailSender = emailSender;
             _roleManager = roleManager;
             _context = context;
+            _cache = cahche;
         }
 
         /// <summary>
@@ -233,8 +93,9 @@ namespace Emp.Areas.Identity.Pages.Account
             ///     directly from your code. This API may change or be removed in future releases.
             /// </summary>
             [Required]
-            [EmailAddress]
+        
             [Display(Name = "Email")]
+            [CustomEmail]
             public string Email { get; set; }
 
             /// <summary>
@@ -263,11 +124,13 @@ namespace Emp.Areas.Identity.Pages.Account
             public string Name { get; set; }
 
             [Required]
+            [AgeCheck(1, 100)]
             public int Age { get; set; }
 
             [Required]
             [Display(Name = "Date of Birth")]
             [DataType(DataType.Date)]
+            [DateOfBirthRegistrar]
             public DateTime Dob { get; set; }
 
             [Required]
@@ -275,6 +138,7 @@ namespace Emp.Areas.Identity.Pages.Account
 
             [Required]
             [Display(Name = "Phone Number")]
+            [PhoneNumberCheck]
             public string PhoneNumber { get; set; }
 
 
@@ -283,28 +147,34 @@ namespace Emp.Areas.Identity.Pages.Account
             public bool IsAdmin { get; set; }
 
 
+            [AgeAndDateOfBirthRegistrar]
+            public object AgeAndDateOfBirth => new object();
+
         }
 
 
         public async Task OnGetAsync(string returnUrl = null)
         {
             ReturnUrl = returnUrl;
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+           
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
-            returnUrl ??= Url.Content("~/");
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
             if (Input.IsAdmin)
             {
-                if (HttpContext.Session.GetString("AdminAuth") != "true")
+                if (!_cache.TryGetValue("AdminAuth", out
+                    string authenticator) || authenticator != "true")
                 {
                     ModelState.AddModelError(string.Empty, "ADMIN AUTHENTICATION REQUIRED.");
                     return Page();
                 }
             }
-           
+            if(!ModelState.IsValid)
+            {
+                return Page();
+            }
             if (ModelState.IsValid)
             {
                 var user = new ApplicationUser
@@ -327,7 +197,7 @@ namespace Emp.Areas.Identity.Pages.Account
                     _logger.LogInformation("User created a new account with password.");
 
                     TempData["SuccessMessage"] = "You can now log in!";
-                   //assigning based on if admin or not
+                    //assigning based on if admin or not
                     if (Input.IsAdmin)
                     {
                         await _userManager.AddToRoleAsync(user, "Admin");
@@ -336,6 +206,9 @@ namespace Emp.Areas.Identity.Pages.Account
                     {
                         await _userManager.AddToRoleAsync(user, "Employee");
                     }
+
+                    var userFinder = _context.ApplicationsUsers.Where(i => i.Email == Input.Email).FirstOrDefault();
+
 
                     //creating new employee 
                     var employee = new Employee
@@ -347,7 +220,7 @@ namespace Emp.Areas.Identity.Pages.Account
                         PhoneNumber = Input.PhoneNumber,
                         Email = Input.Email,
                         IsAdmin = Input.IsAdmin,
-                        UserId = user.Id,
+                        UserId = userFinder.Id,
                     };
                     _context.Add(employee);
                     await _context.SaveChangesAsync();
@@ -360,7 +233,7 @@ namespace Emp.Areas.Identity.Pages.Account
                 }
             }
 
-            // If we got this far, something failed, redisplay form
+      
 
             return Page();
         }

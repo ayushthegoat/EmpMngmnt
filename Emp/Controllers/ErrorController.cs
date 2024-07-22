@@ -1,10 +1,21 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-public class ErrorController : Controller
+namespace Emp.Controllers
 {
-    [Route("Error/AccessDenied")]
-    public IActionResult AccessDenied()
+    public class ErrorController : Controller
     {
-        return View();
+        [Route("Error/AccessDenied")]
+        public IActionResult AccessDenied()
+        {
+            return View();
+
+        }
+
+
+        public IActionResult GeneralError()
+        {
+            return View();
+        }
+
     }
 }

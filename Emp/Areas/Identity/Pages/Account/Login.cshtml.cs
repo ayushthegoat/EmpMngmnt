@@ -98,7 +98,7 @@ namespace Emp.Areas.Identity.Pages.Account
             // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+           
 
             ReturnUrl = returnUrl;
         }
@@ -107,7 +107,7 @@ namespace Emp.Areas.Identity.Pages.Account
         {
             returnUrl ??= Url.Content("~/");
 
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+           
 
             if (ModelState.IsValid)
             {
@@ -123,18 +123,18 @@ namespace Emp.Areas.Identity.Pages.Account
                     if (roles.Contains("Admin") || roles.Contains("SuperAdmin"))
                     {
                         _logger.LogInformation("ADMIN Or SUPER ADMIN logged in.");
-                       // return RedirectToPage("/Employees");
+                        // return RedirectToPage("/Employees");
                         return LocalRedirect(Url.Content("~/Admin"));
                     }
-                    else if(roles.Contains("Employee"))
+                    else if (roles.Contains("Employee"))
                     {
                         _logger.LogInformation("EMPLOYEE loggged in.");
-                    
+
                         return LocalRedirect(Url.Content("~/Employees/OwnDetails"));
                     }
                     return LocalRedirect(returnUrl);
                 }
-               
+
                 else
                 {
                     ModelState.AddModelError(string.Empty, "Invalid login attempt.");

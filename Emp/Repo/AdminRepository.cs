@@ -3,11 +3,12 @@
 using Emp.Controllers;
 using Emp.Data;
 using Emp.Models;
-using Emp.Models;
+
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -17,18 +18,19 @@ namespace Emp.Repo
     public class AdminRepository : IAdminRepository
     {
         private readonly ILogger<AdminRepository> _logger;
+
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly IEmployeeRepository _employeeRepository;
         private readonly ApplicationDbContext _context;
         private readonly RoleManager<IdentityRole> _roleManager;
-        public AdminRepository(UserManager<IdentityUser> userManager, ILogger<AdminRepository> logger, IEmployeeRepository employeeRepsitory, ApplicationDbContext context,
+
+        public AdminRepository(UserManager<IdentityUser> userManager, ILogger<AdminRepository> logger, ApplicationDbContext context,
             RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
             _logger = logger;
-            _employeeRepository = employeeRepsitory;
             _context = context;
             _roleManager = roleManager;
+
         }
 
 
@@ -129,6 +131,10 @@ namespace Emp.Repo
             }
 
             var roles = await _userManager.GetRolesAsync(user);
+            if (roles == null)
+            {
+                return null;
+            }
             return roles.FirstOrDefault(); // Return the first role if there are multiple
         }
 
@@ -173,7 +179,7 @@ namespace Emp.Repo
             var defaultPassword = "Default@123";
             var result = await _userManager.CreateAsync(user, defaultPassword);
 
-           
+
 
             if (result.Succeeded)
             {
@@ -183,7 +189,7 @@ namespace Emp.Repo
 
                 var fromIdentity = _context.ApplicationsUsers.Where(i => i.Email == employee.Email).FirstOrDefault();
 
-                if(adding.Succeeded && fromIdentity != null)
+                if (adding.Succeeded && fromIdentity != null)
                 {
                     var emp = new Employee
                     {
@@ -191,14 +197,14 @@ namespace Emp.Repo
                         Name = employee.Name,
                         Age = employee.Age,
                         Address = employee.Address,
-                        UserId = fromIdentity.Id,
+                        UserId = user.Id,
                         Dob = employee.Dob,
                         PhoneNumber = employee.PhoneNumber,
                         IsAdmin = false,
-                        
+
 
                     };
-                   _context.Employees.Add(emp);
+                    _context.Employees.Add(emp);
                     await _context.SaveChangesAsync();
                 }
 
@@ -207,9 +213,9 @@ namespace Emp.Repo
 
 
         }
-    
 
-            
-        
+
+
+
     }
 }
