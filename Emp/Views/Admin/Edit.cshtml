@@ -1,8 +1,13 @@
 ﻿@model Emp.Models.Employee
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Edit User";
+    var succesMessage = TempData["SuccessMessage"] as string;
+    var redirectUrl = Url.Action("Index", "Admin");
 }
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
     body {
         background-image: url('https://static.vecteezy.com/system/resources/previews/003/161/903/non_2x/light-blue-yellow-gradient-blur-background-vector.jpg');
@@ -11,16 +16,18 @@
         background-repeat: no-repeat;
     }
 </style>
-<h1>Edit</h1>
+
+<h1>Edit Admin</h1>
 <div class="card bg-dark text-light p-4">
-    <h4>Employee</h4>
+    <h4>Admin Details</h4>
     <hr />
     <div class="row">
         <div class="col-md-4">
-            <form asp-action="Edit" method="post">
+            <form asp-action="Edit" method="post" id="editForm">
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="UserId" />
+                <input type="hidden" asp-for="IsAdmin" />
 
                 <div class="form-group mb-3">
                     <label asp-for="Name" class="form-label"></label>
@@ -32,8 +39,9 @@
                     <input asp-for="Age" class="form-control" />
                     <span asp-validation-for="Age" class="text-danger"></span>
                 </div>
-
-                @* <span asp-validation-for="AgeAndDateOfBirth" class="text-danger"></span>*@
+                <div class="form-group">
+                    <span asp-validation-for="AgeAndDateOfBirth" class="text-danger"></span>
+                </div>
                 <div class="form-group mb-3">
                     <label asp-for="Dob" class="form-label"></label>
                     <input asp-for="Dob" class="form-control" type="date" />
@@ -55,12 +63,6 @@
                     <span asp-validation-for="Email" class="text-danger"></span>
                 </div>
 
-
-                <div class="form-group mb-3">
-                    <span asp-validation-for="UserId" class="text-danger"></span>
-                    <span asp-validation-for="Id" class="text-danger"></span>
-                </div>
-
                 <div class="form-group">
                     <input type="submit" value="Save" class="btn btn-outline-primary" />
                 </div>
@@ -69,11 +71,28 @@
     </div>
 </div>
 <div>
-    <a asp-action="OwnDetails" class="btn btn-outline-success mt-2">Back to Details</a>
+    <a asp-action="Index" class="btn btn-outline-success mt-2">Back to Details</a>
 </div>
 
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var successMessage = '@succesMessage';
+            var redirectUrl = '@redirectUrl';
+            if (successMessage) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Edit Successful!',
+                    text: successMessage
+                }).then(function () {
+                    window.location.href = redirectUrl;
+                });
+            }
+        });
+    </script>
 }

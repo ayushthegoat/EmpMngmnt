@@ -21,11 +21,13 @@ namespace Emp.Areas.Identity.Pages.Account
     {
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger, UserManager<IdentityUser> userManager)
         {
             _signInManager = signInManager;
             _logger = logger;
+            _userManager = userManager;
         }
 
         /// <summary>
@@ -96,7 +98,7 @@ namespace Emp.Areas.Identity.Pages.Account
             // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+           
 
             ReturnUrl = returnUrl;
         }
@@ -105,7 +107,7 @@ namespace Emp.Areas.Identity.Pages.Account
         {
             returnUrl ??= Url.Content("~/");
 
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+           
 
             if (ModelState.IsValid)
             {
@@ -115,17 +117,24 @@ namespace Emp.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
+
+                    var user = await _userManager.FindByEmailAsync(Input.Email);
+                    var roles = await _userManager.GetRolesAsync(user);
+                    if (roles.Contains("Admin") || roles.Contains("SuperAdmin"))
+                    {
+                        _logger.LogInformation("ADMIN Or SUPER ADMIN logged in.");
+                        // return RedirectToPage("/Employees");
+                        return LocalRedirect(Url.Content("~/Admin"));
+                    }
+                    else if (roles.Contains("Employee"))
+                    {
+                        _logger.LogInformation("EMPLOYEE loggged in.");
+
+                        return LocalRedirect(Url.Content("~/Employees/OwnDetails"));
+                    }
                     return LocalRedirect(returnUrl);
                 }
-                if (result.RequiresTwoFactor)
-                {
-                    return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
-                }
-                if (result.IsLockedOut)
-                {
-                    _logger.LogWarning("User account locked out.");
-                    return RedirectToPage("./Lockout");
-                }
+
                 else
                 {
                     ModelState.AddModelError(string.Empty, "Invalid login attempt.");

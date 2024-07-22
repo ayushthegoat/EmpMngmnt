@@ -1,0 +1,20 @@
+﻿@model ErrorViewModel
+
+@{
+    ViewData["Title"] = "Access Denied";
+}
+<style>
+    body {
+        background-image: url('https://static.vecteezy.com/system/resources/previews/003/161/903/non_2x/light-blue-yellow-gradient-blur-background-vector.jpg');
+        background-size: cover;
+        font-family: 'Consolas', monospace;
+        background-repeat: no-repeat;
+    }
+</style>
+<div class="container">
+    <h1>@ViewData["Title"]</h1>
+    <div class="alert alert-danger" role="alert">
+        You do not have permission to access this page.
+    </div>
+    <a href="@Url.Action("Index", "Home")" class="btn btn-primary">Return to Home</a>
+</div>

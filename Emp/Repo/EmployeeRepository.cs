@@ -21,10 +21,6 @@ namespace Emp.Repo
         }
 
 
-        public async Task<IEnumerable<Employee>> GetAllAsync()
-        {
-            return await _context.Employees.ToListAsync();
-        }
 
         public async Task<Employee> GetByIdAsync(int id)
         {
@@ -42,7 +38,7 @@ namespace Emp.Repo
 
             //converting dateOnly to dateTime
             DateOnly dobDateOnly = employee.Dob;
-            TimeOnly timeOfDay = TimeOnly.FromDateTime(DateTime.Now); 
+            TimeOnly timeOfDay = TimeOnly.FromDateTime(DateTime.Now);
             DateTime dobDateTime = dobDateOnly.ToDateTime(timeOfDay);
 
 
@@ -53,7 +49,7 @@ namespace Emp.Repo
                 PhoneNumber = employee.PhoneNumber,
                 Name = employee.Name,
                 Age = employee.Age,
-                Dob = dobDateTime, 
+                Dob = dobDateTime,
                 Address = employee.Address,
                 IsAdmin = employee.IsAdmin
             };
@@ -63,28 +59,24 @@ namespace Emp.Repo
 
             if (result.Succeeded)
             {
-                if (employee.IsAdmin)
-                {
-                    await _userManager.AddToRoleAsync(user, "Admin");
-                }
-                else
-                {
-                    await _userManager.AddToRoleAsync(user, "Employee");
-                }
-                return;
+
+
+                await _userManager.AddToRoleAsync(user, "Employee");
+
+
             }
             return;
         }
 
-        public async Task UpdateAsync(Employee employee, string previousEmail)
+        public async Task UpdateAsync(Employee employee)
         {
-
-            Console.WriteLine($"Employee Email: {employee.Email}");
-
             DateOnly dobDateOnly = employee.Dob;
             TimeOnly timeOfDay = TimeOnly.FromDateTime(DateTime.Now);
             DateTime dobDateTime = dobDateOnly.ToDateTime(timeOfDay);
-            var existingEmployee = await _context.Employees.FindAsync(employee.Id);
+
+            var existingEmployee = await _context.Employees
+                .Where(e => e.Id == employee.Id)
+                .FirstOrDefaultAsync();
 
             if (existingEmployee != null)
             {
@@ -98,66 +90,32 @@ namespace Emp.Repo
 
                 _context.Employees.Update(existingEmployee);
                 await _context.SaveChangesAsync();
-               
 
             }
-
-
-
-
-            var user = _context.ApplicationsUsers.Where(i => i.Email == previousEmail).FirstOrDefault();
-
+            var user = await _context.ApplicationsUsers.Where(i => i.Id == employee.UserId).FirstOrDefaultAsync();
             if (user != null)
             {
                 user.Email = employee.Email;
-                user.NormalizedEmail = employee.Email;
-                user.NormalizedUserName = employee.Email;
+                user.NormalizedEmail = employee.Email.ToUpper();
                 user.UserName = employee.Email;
                 user.PhoneNumber = employee.PhoneNumber;
-                user.Dob = dobDateTime;
+                user.Name = employee.Name;
                 user.Address = employee.Address;
-                user.PhoneNumber = employee.PhoneNumber;
-                user.Email = employee.Email;
-                user.IsAdmin = employee.IsAdmin;
+                user.Dob = dobDateTime;
+                user.Age = employee.Age;
                 await _userManager.UpdateAsync(user);
             }
-            /*
-      await _context.Database.ExecuteSqlRawAsync(
-                "EXEC UpdateAspNetUserDetails @PreviousEmail, @NewEmail, @NewUsername, @Dob, @Address, @Name, @Age",
-                new SqlParameter("@PreviousEmail", previousEmail),
-                new SqlParameter("@NewEmail", employee.Email),
-                new SqlParameter("@NewUsername", employee.Email),
-                new SqlParameter("@Dob", dobDateTime),
-                new SqlParameter("@Address", employee.Address),
-                new SqlParameter("@Name", employee.Name),
-                new SqlParameter("@Age", employee.Age)
-            );*/
-
         }
-           
-        public async Task DeleteAsync(int id, Employee employee)
-        {
 
-
-            //var user = _context.ApplicationsUsers.Where(i => i.Email == employee.Email).FirstOrDefault();
-            var user = await _userManager.FindByEmailAsync(employee.Email);
-
-            if (user != null)
-            {
-                await _userManager.DeleteAsync(user);
-            }
-
-            if (employee != null)
-            {
-                _context.Employees.Remove(employee);
-
-                await _context.SaveChangesAsync();
-            }
-        }
 
         public async Task<bool> EmployeeExistsAsync(int id)
         {
             return await _context.Employees.AnyAsync(e => e.Id == id);
+        }
+
+        public async Task<Employee> GetByUserIdAsync(string userId)
+        {
+            return await _context.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
         }
     }
 }
